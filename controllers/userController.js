@@ -1,3 +1,5 @@
+
+import { comparePass, hashPassword } from "../helpers/authHelper.js";
 import userModel from "../models/userModel.js";
 
 //callback funtions:
@@ -5,10 +7,19 @@ import userModel from "../models/userModel.js";
 export const loginController = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await userModel.findOne({ email, password });
+    const user = await userModel.findOne({ email });
     if (!user) {
       return res.status(404).send("User not found");
     }
+    //de-crypt:
+    const match = await comparePass(password, user.password);
+    if (!match) {
+      return res.status(200).send({
+        success: false,
+        message: "password not matched",
+      });
+    }
+    //response status:
     return res.status(200).json({
       success: true,
       user,
@@ -25,8 +36,26 @@ export const loginController = async (req, res) => {
 // 2. POST || REGISTER:
 export const registerController = async (req, res) => {
   try {
-    const newUser = new userModel(req.body);
-    await newUser.save();
+    const { name, email, password } = req.body;
+    //check user:
+    const existingUser = await userModel.findOne({ email });
+
+    //existing user:
+    if (existingUser) {
+      return res.status(200).send({
+        success: true,
+        message: "already registered",
+      });
+    }
+
+    const hashedPassword = await hashPassword(password);
+    const newUser = await new userModel({
+      name,
+      email,
+      password: hashedPassword,
+    }).save();
+
+    //response status:
     res.status(201).json({
       success: true,
       message: "Register successfully",

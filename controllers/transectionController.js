@@ -52,15 +52,15 @@ export const deleteTransection = async (req, res) => {
 // GET || get all transections:
 export const getAllTransection = async (req, res) => {
   try {
-    const { frequency } = req.body;
+    const { frequency,type } = req.body;
     const transections = await transectionModel
       .find({
         userid: req.body.userid,
         date: {
           $gt: moment().subtract(Number(frequency), "d").toDate(),
         },
+        ...(type !== 'all' && {type}),
       })
-      .limit(10)
       .sort({ date: -1 });
     res.status(200).json(transections);
   } catch (error) {
